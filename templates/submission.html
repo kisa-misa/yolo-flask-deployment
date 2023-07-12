@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/tables.css') }}">
+</head>
+<body>
+<h1>Object Detection and Road Pulse Estimation Using DeepSORT and YOLOv8x6</h1>
+
+<video width=55% height=35% controls>
+    <source src="{{url_for('stream_video')}}" type="video/mp4">
+</video>
+
+
+{% for table in tables %}
+    <div class="table-wrapper">
+            {{ table|safe }}
+    </div>
+{% endfor %}
+
+<img src="{{ image_path }}" alt="Image">
+
+
+</body>
+</html>
