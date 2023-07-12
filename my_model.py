@@ -58,7 +58,7 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
 
 
     for i, box in enumerate(bbox):
-        obj_name = names[object_id[i]]
+        obj_name = "bike" if object_id[i]==3 else names[object_id[i]]
         x1, y1, x2, y2 = [int(i) for i in box]
         x1 += offset[0]
         x2 += offset[0]
@@ -195,6 +195,7 @@ class DetectionPredictor(BasePredictor):
             #count += 1
             n = (det[:, 5] == c).sum()  # detections per class
             cl = self.model.names[int(c)]
+            if cl=="motorcycle": cl = "bike"
             log_string2 += f"{n} {cl}{'s' * (n > 1)}, "
         # write
         gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
@@ -233,13 +234,15 @@ def delete_files():
     else:
       print("The file does not exist")  
 
-def predict(filename):
-    #delete_files()
-    print("Predicting...")
-    init_tracker()
-    #model = "yolov8x6.pt"
-    #imgsz = check_imgsz(cfg.imgsz, min_dim=2)  # check image size
-    #source = 'uploads/'+filename
-    predictor = DetectionPredictor(filename)
-    return predictor()
+# def predict(filename, model_name):
+#     #delete_files()
+#     print("Predicting...")
+#     init_tracker()
+#
+#
+#     #model = "yolov8x6.pt"
+#     #imgsz = check_imgsz(cfg.imgsz, min_dim=2)  # check image size
+#     #source = 'uploads/'+filename
+#     predictor = DetectionPredictor(filename, model_name)
+#     return predictor()
 

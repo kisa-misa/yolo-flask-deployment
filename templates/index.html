@@ -6,19 +6,22 @@
     <title>Title</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
-    
-    <script type="text/javascript">// <![CDATA[
-      function showAnalysisBar() {
-        $('#notice').show();
-      }
-    //]]></script>
+
 </head>
 <body>
-    <h1>Object Detection and Road Pulse Estimation Using DeepSORT and YOLOv8x6</h1>
+    <h1>Object Detection and Road Pulse Estimation Using DeepSORT and YOLOv8</h1>
     <form action="/submit" enctype="multipart/form-data" method="POST">
     <input type="file" name="video" >
-    <br>    
-    <br>                                                                                                                 
+    <br>
+    <br>
+    <select name="comp_select" class="Input">
+          {% for o in data %}
+          <option value="{{ o.model }}">{{ o.model }}</option>
+          {% endfor %}
+    </select>
+    <br>
+    <br>
+
     <input type="submit" value="Отправить" onclick="showAnalysisBar();">
     </form>
     <div id="notice" hidden=True>

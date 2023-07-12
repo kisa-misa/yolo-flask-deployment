@@ -6,20 +6,30 @@
     <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/tables.css') }}">
 </head>
 <body>
-<h1>Object Detection and Road Pulse Estimation Using DeepSORT and YOLOv8x6</h1>
+<h1>Object Detection and Road Pulse Estimation Using DeepSORT and YOLOv8</h1>
 
-<video width=55% height=35% controls>
-    <source src="{{url_for('stream_video')}}" type="video/mp4">
-</video>
+<img src="{{ url_for('video_feed') }}" width=55% height=35% />
+
+<img id="picture" src="data:image/png;base64,{{ img_data }}">
+
+<button onclick="play()">Play</button>
+<button onclick="pause()">Pause</button>
+
+<script>
+  var xhr = new XMLHttpRequest();
+
+  function play() {
+    xhr.open('GET', '/play', true);
+    xhr.send();
+  }
+
+  function pause() {
+    xhr.open('GET', '/pause', true);
+    xhr.send();
+  }
+</script>
 
 
-{% for table in tables %}
-    <div class="table-wrapper">
-            {{ table|safe }}
-    </div>
-{% endfor %}
-
-<img src="{{ image_path }}" alt="Image">
 
 
 </body>
