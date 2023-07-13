@@ -28,6 +28,7 @@ Usage - formats:
 import platform
 from collections import defaultdict
 from pathlib import Path
+import requests
 
 import cv2
 import torch
@@ -37,9 +38,9 @@ import os
 from ultralytics.nn.autobackend import AutoBackend
 from ultralytics.nn.modules import Conv
 from ultralytics.yolo.configs import get_config
-from ultralytics.yolo.data.dataloaders.stream_loaders import LoadImages
+from ultralytics.yolo.data.dataloaders.stream_loaders import LoadImages, LoadStreams
 from ultralytics.yolo.data.utils import IMG_FORMATS, VID_FORMATS
-from ultralytics.yolo.utils import LOGGER, SETTINGS, colorstr, ops
+from ultralytics.yolo.utils import DEFAULT_CONFIG, LOGGER, SETTINGS, colorstr, ops
 from ultralytics.yolo.utils.checks import check_file, check_imgsz, check_imshow
 from ultralytics.yolo.utils.files import increment_path
 from ultralytics.yolo.utils.torch_utils import select_device, smart_inference_mode
@@ -47,12 +48,13 @@ from ultralytics.yolo.utils.torch_utils import select_device, smart_inference_mo
 
 class BasePredictor:
 
-    def __init__(self):
+    def __init__(self, config=DEFAULT_CONFIG, overrides=None):
 
         self.project = None
         self.task = "detect"
         self.name = None
         self.exist_ok = False
+        self.args = get_config(config, overrides)
         project = self.project or Path(SETTINGS['runs_dir']) / self.task
         name = self.name or f"predict"
         self.save_dir = increment_path(Path(project) / name, exist_ok=self.exist_ok)
@@ -141,22 +143,40 @@ class BasePredictor:
         bs = 1  # batch_size
         is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
         is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
+        webcam = source.isnumeric() or source.endswith('.streams') or (is_url and not is_file)
+
         if is_url and is_file:
             source = check_file(source)  # download
 
-        self.dataset = LoadImages(source,
+        video = []
+        # model = self.model if self.done_setup else self.setup(source, model)
+        model = self.model
+
+        if webcam:
+            self.args.show = check_imshow(warn=True)
+            self.dataset = LoadStreams(source,
                                        imgsz=self.imgsz,
                                        stride=self.stride,
                                        auto=self.pt,
-                                       transforms=getattr(self.model.model, 'transforms', None),
-                                       vid_stride=1)
+                                       transforms=getattr(model.model, 'transforms', None),
+                                       vid_stride=self.args.vid_stride)
+            bs = len(self.dataset)
+        else:
+            sources = [source]*10
 
-        video = []
-        #model = self.model if self.done_setup else self.setup(source, model)
-        model = self.model
+
+            self.dataset = LoadImages(sources,
+                                           imgsz=self.imgsz,
+                                           stride=self.stride,
+                                           auto=self.pt,
+                                           transforms=getattr(self.model.model, 'transforms', None),
+                                           vid_stride=1)
+
         model.eval()
         self.seen, self.windows, self.dt = 0, [], (ops.Profile(), ops.Profile(), ops.Profile())
         self.all_outputs = []
+        self.webcam = webcam
+
         for batch in self.dataset:
             path, im, im0s, vid_cap, s = batch
             with self.dt[0]:
@@ -173,6 +193,8 @@ class BasePredictor:
                 preds = self.postprocess(preds, im, im0s)
 
             for i in range(len(im)):
+                if self.webcam:
+                    path, im0s = path[i], im0s[i]
                 p = Path(path)
 
                 log_string, log_string2, pulse_df, vehicle_df = self.write_results(i, preds, (p, im, im0s))

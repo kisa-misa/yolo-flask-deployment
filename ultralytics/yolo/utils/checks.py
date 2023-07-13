@@ -199,9 +199,9 @@ def check_suffix(file='yolov8n.pt', suffix=('.pt',), msg=''):
             if len(s):
                 assert s in suffix, f"{msg}{f} acceptable suffix is {suffix}"
 
-
+from urllib.request import urlopen
 def check_file(file, suffix=''):
-    # Search/download file (if necessary) and return path
+    #Search/download file (if necessary) and return path
     check_suffix(file, suffix)  # optional
     file = str(file)  # convert to str()
     if Path(file).is_file() or not file:  # exists
@@ -215,6 +215,17 @@ def check_file(file, suffix=''):
             LOGGER.info(f'Downloading {url} to {file}...')
             torch.hub.download_url_to_file(url, file)
             assert Path(file).exists() and Path(file).stat().st_size > 0, f'File download failed: {url}'  # check
+        # url = file
+        # img_load_dict = {}
+        # #ix = 1
+        # for ix in range(10, -1, -1):
+        #     # Use urllib to get the image and convert into a cv2 usable format
+        #     with urlopen(url) as imgResp:
+        #         imgNp = np.array(bytearray(imgResp.read()), dtype=np.uint8)
+        #         img = cv2.imdecode(imgNp, -1)
+        #         img_load_dict[str(ix)] = img
+        #         ix += 1
+
         return file
     else:  # search
         files = []

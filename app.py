@@ -18,7 +18,7 @@ import base64
 from pathlib import Path
 from my_model import init_tracker, DetectionPredictor
 from ultralytics.nn.autobackend import AutoBackend
-from ultralytics.yolo.data.dataloaders.stream_loaders import LoadImages
+from ultralytics.yolo.data.dataloaders.stream_loaders import LoadImages, LoadStreams
 from ultralytics.yolo.data.utils import IMG_FORMATS, VID_FORMATS
 from ultralytics.yolo.utils.checks import check_file, check_imgsz
 
@@ -49,10 +49,10 @@ def predict(filename):
     print("Predicting...")
     init_tracker()
 
-    source = 'uploads/' + filename
+    #source =  + filename
     #source = str(source if source is not None else self.source)
 
-    return predictor(source)
+    return predictor(filename)
 
 def generate_frames(video):
     global is_playing
@@ -86,47 +86,49 @@ def hello():
 def submit():
     global filename
     global video
-    image_path = 'static/images/time_series.png'
-    model_name = request.form.get('comp_select')
+
+    #model_name = request.form.get('comp_select')
 
     if request.method=="POST":
         #Checking if request has a file part
-        if 'video' not in request.files:
-            flash("No file part")
-            return redirect(request.url)
+        # if 'video' not in request.files:
+        #     flash("No file part")
+        #     return redirect(request.url)
         #Getting submitted file    
-        file = request.files['video'] 
+        #file = request.files['video']
+        text = request.form['text']
         #Checking if user submitted a file (The browser submits an empty file with no filename if the user doesn't select a file)
-        if file.filename =="":
-            flash("No selected file")
-            return redirect(request.url)
-        
+        # if file.filename =="":
+        #     flash("No selected file")
+        #     return redirect(request.url)
+        #
         #checking if file has the allowed extension
-        if file and allowed_file(file.filename):
+        #if file and allowed_file(file.filename):
             #cleaning up the filename and making sure if doesn't cause any dangerous operations in the server's file directory
-            filename = secure_filename (file.filename)
+            #filename = secure_filename (file.filename)
             #saving file to uploads folder
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            #loading video into model
-            flash('Processing submitted video',"submission")
-            outputs, pulse_df, video = predict(filename)
+            #file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
-            pulse_df.index = pd.to_datetime(pulse_df['time'], format = '%H:%M:%S  %d.%m.%Y', errors = 'coerce')
-            
-            fig, ax = plt.subplots()
-            sns.lineplot(pulse_df)
-            ax.set_xticklabels([pd.to_datetime(t.get_text(), errors = 'coerce').strftime('%H:%M:%S') for t in ax.get_xticklabels()])
-            plt.ylabel('Pulse')
-            plt.xlabel('time')
-            buffer = io.BytesIO()
-            plt.savefig(buffer, format="png")  # Corrected line
-            buffer.seek(0)
-            image_memory = base64.b64encode(buffer.getvalue())
-            return  render_template("submission.html",n={"filename":filename}, img_data=image_memory.decode('utf-8'))
+            #loading video into model
+        flash('Processing submitted video',"submission")
+        outputs, pulse_df, video = predict(text)
+
+        pulse_df.index = pd.to_datetime(pulse_df['time'], format = '%H:%M:%S  %d.%m.%Y', errors = 'coerce')
+
+        fig, ax = plt.subplots()
+        sns.lineplot(pulse_df)
+        ax.set_xticklabels([pd.to_datetime(t.get_text(), errors = 'coerce').strftime('%H:%M:%S') for t in ax.get_xticklabels()])
+        plt.ylabel('Pulse')
+        plt.xlabel('time')
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format="png")  # Corrected line
+        buffer.seek(0)
+        image_memory = base64.b64encode(buffer.getvalue())
+        return  render_template("submission.html",n={"filename":filename}, img_data=image_memory.decode('utf-8'))
         
         #else if file type not allowed
-        flash("File Type Not Allowed. \".mp4\",\".avi\",\".mkv\" only")
-        return redirect(request.url)
+        # flash("File Type Not Allowed. \".mp4\",\".avi\",\".mkv\" only")
+        # return redirect(request.url)
      #TODO If user goes straight to /submit
     return render_template("submission.html")
 
@@ -136,9 +138,9 @@ def video_feed():
     return Response(generate_frames(video), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-@app.route('/video')
-def stream_video():
-    return send_file('static/videos/result.mp4', mimetype='video/mp4')
+# @app.route('/video')
+# def stream_video():
+#     return send_file('static/videos/result.mp4', mimetype='video/mp4')
 
 @app.route('/play')
 def play():
