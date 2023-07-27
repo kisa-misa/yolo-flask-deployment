@@ -5,18 +5,12 @@ from ultralytics.yolo.utils import ops
 from collections import deque
 import pandas as pd
 import os
-import hydra
 import time
 import torch
-from pathlib import Path
-import cv2
 import numpy as np
 
 from ultralytics.yolo.v8.detect.deep_sort_pytorch.utils.parser import get_config
 from ultralytics.yolo.v8.detect.deep_sort_pytorch.deep_sort import DeepSort
-
-#FILE = Path(__file__).resolve()
-#ROOT = FILE.parents[2]  # YOLO
 DEFAULT_CONFIG = "ultralytics/yolo/configs/default.yaml"
 
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
@@ -115,22 +109,6 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
     pulse = sum(np.multiply(speeds, weights))
     row = [current_time, pulse]
     pulse_df.loc[len(pulse_df)] = row
-    #cv2.putText(img, f"pulse: {pulse}", (500, 50), 0, 1, [0, 255, 0], thickness=2, lineType=cv2.LINE_AA)
-    #print(img.shape)
-    #image_toresize = img 
-    #blank_image = np.zeros((height+360,width+640,3), np.uint8)
-    #blank_image[:,:] = (255,255,255)
-
-    #l_img = blank_image.copy()          #(height,width+200,3)
-    
-    ## Here, y_offset+height <= blank_image.shape[0] and x_offset+width <= blank_image.shape[1]
-    #l_img[0:height, 0:width] = image_toresize.copy()
-    #print(l_img.shape)
-    #count = 0
-    #for row in vehicle_df:
-    #    count +=1
-    #    cv2.putText(l_img, f"{row}", (width+660, count*50), 0, 1, [0, 0, 0], thickness=1, lineType=cv2.LINE_AA)
-
 
     return img, pulse_df, vehicle_df
 
@@ -156,7 +134,7 @@ class DetectionPredictor(BasePredictor):
                                         max_det=300)
 
         for i, pred in enumerate(preds):
-            shape = orig_img.shape
+            shape = orig_img[i].shape if self.webcam else orig_img.shape
             pred[:, :4] = ops.scale_boxes(img.shape[2:], pred[:, :4], shape).round()
 
         return preds
@@ -233,16 +211,4 @@ def delete_files():
       os.remove(full_path)
     else:
       print("The file does not exist")  
-
-# def predict(filename, model_name):
-#     #delete_files()
-#     print("Predicting...")
-#     init_tracker()
-#
-#
-#     #model = "yolov8x6.pt"
-#     #imgsz = check_imgsz(cfg.imgsz, min_dim=2)  # check image size
-#     #source = 'uploads/'+filename
-#     predictor = DetectionPredictor(filename, model_name)
-#     return predictor()
 

@@ -38,11 +38,10 @@ def estimatespeed(Location1, Location2, h, w):
     #Euclidean Distance Formula
     d_pixel = math.sqrt(math.pow(Location2[0] - Location1[0], 2) + math.pow(Location2[1] - Location1[1], 2))
     # defining thr pixels per meter
-    ppm = max(h, w) // 10
-    d_meters = d_pixel/ppm
-    time_constant = 15*3.6
-    #distance = speed/time
-    speed = d_meters * time_constant
+    ppm = min(h, w)
+    d_meters = d_pixel / ppm
+    fps = 150
+    speed = d_meters * fps * 3.6
 
     return int(speed)
 
@@ -147,7 +146,7 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
 
     weights = [0,0,7,2,0,30,0,19]
     speeds = [0] * 8
-    vehicle_constants = [0,0,3,1,0,6,0,4]
+    vehicle_constants = [0,0,3,1,0,6,0,3]
 
     for i, box in enumerate(bbox):
         obj_name = names[object_id[i]]

@@ -25,36 +25,40 @@ Usage - formats:
                                     yolov8n_edgetpu.tflite     # TensorFlow Edge TPU
                                     yolov8n_paddle_model       # PaddlePaddle
     """
-import platform
-from collections import defaultdict
+import time
 from pathlib import Path
-import requests
 
 import cv2
 import torch
+import io
+import base64
 import numpy as np
-import os
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib
+
+matplotlib.use('agg')
 
 from ultralytics.nn.autobackend import AutoBackend
-from ultralytics.nn.modules import Conv
 from ultralytics.yolo.configs import get_config
 from ultralytics.yolo.data.dataloaders.stream_loaders import LoadImages, LoadStreams
 from ultralytics.yolo.data.utils import IMG_FORMATS, VID_FORMATS
-from ultralytics.yolo.utils import DEFAULT_CONFIG, LOGGER, SETTINGS, colorstr, ops
+from ultralytics.yolo.utils import LOGGER, SETTINGS, ops
 from ultralytics.yolo.utils.checks import check_file, check_imgsz, check_imshow
 from ultralytics.yolo.utils.files import increment_path
-from ultralytics.yolo.utils.torch_utils import select_device, smart_inference_mode
+from ultralytics.yolo.utils.torch_utils import smart_inference_mode
 
 
 class BasePredictor:
 
-    def __init__(self, config=DEFAULT_CONFIG, overrides=None):
+    def __init__(self):
 
         self.project = None
         self.task = "detect"
+        #self.args = get_config(config, overrides)
         self.name = None
         self.exist_ok = False
-        self.args = get_config(config, overrides)
         project = self.project or Path(SETTINGS['runs_dir']) / self.task
         name = self.name or f"predict"
         self.save_dir = increment_path(Path(project) / name, exist_ok=self.exist_ok)
@@ -65,7 +69,7 @@ class BasePredictor:
         print(self.device.type)
         self.half = False
         self.half &= self.device.type != 'cpu'  # half precision only supported on CUDA
-        self.model = AutoBackend('yolov8n.pt', device=self.device, dnn=False, fp16=False)
+        self.model = AutoBackend('yolov8x6.pt', device=self.device, dnn=False, fp16=False)
         self.stride, self.pt = None, None
         self.stride, self.pt = self.model.stride, self.model.pt
         self.imgsz = check_imgsz(640, stride=self.stride)
@@ -98,46 +102,6 @@ class BasePredictor:
     def postprocess(self, preds, img, orig_img):
         return preds
 
-    #def setup(self, source=None, model=None):
-        # source
-        # source = str(source if source is not None else self.source)
-        # is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
-        # is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
-        # if is_url and is_file:
-        #     source = check_file(source)  # download
-
-        # model
-        # if torch.cuda.is_available():
-        #     device = torch.device("cuda:0")
-        # else:
-        #     device = torch.device("cpu")
-        # device = select_device(self.device)
-        # print(device.type)
-        # self.half &= device.type != 'cpu'  # half precision only supported on CUDA
-
-        # model = self.model_name  # "best.pt"
-        # model = AutoBackend(model, device=device, dnn=False, fp16=False)
-        # stride, pt = model.stride, model.pt
-        # imgsz = check_imgsz(640, stride=stride)  # check image size
-
-        # Dataloader
-        #bs = 1  # batch_size
-        # self.dataset = LoadImages(source,
-        #                           imgsz=imgsz,
-        #                           stride=stride,
-        #                           auto=pt,
-        #                           transforms=getattr(model.model, 'transforms', None),
-        #                           vid_stride=1)
-        #self.vid_path, self.vid_writer = [None] * bs, [None] * bs
-        #model.warmup(imgsz=(1 if pt or model.triton else bs, 3, 640, 640))  # warmup
-
-        # self.model = model
-        # self.imgsz = imgsz
-        # self.done_setup = True
-        # self.device = device
-
-        #return model
-
     @smart_inference_mode()
     def __call__(self, source, model=None):
         bs = 1  # batch_size
@@ -153,29 +117,25 @@ class BasePredictor:
         model = self.model
 
         if webcam:
-            self.args.show = check_imshow(warn=True)
+            #self.args.show = check_imshow(warn=True)
             self.dataset = LoadStreams(source,
                                        imgsz=self.imgsz,
                                        stride=self.stride,
                                        auto=self.pt,
                                        transforms=getattr(model.model, 'transforms', None),
-                                       vid_stride=self.args.vid_stride)
-            bs = len(self.dataset)
+                                       vid_stride=1)
         else:
-            sources = [source]*10
-
-
-            self.dataset = LoadImages(sources,
-                                           imgsz=self.imgsz,
-                                           stride=self.stride,
-                                           auto=self.pt,
-                                           transforms=getattr(self.model.model, 'transforms', None),
-                                           vid_stride=1)
+            self.dataset = LoadImages(source,
+                                      imgsz=self.imgsz,
+                                      stride=self.stride,
+                                      auto=self.pt,
+                                      transforms=getattr(self.model.model, 'transforms', None),
+                                      vid_stride=1)
 
         model.eval()
+        self.webcam = webcam
         self.seen, self.windows, self.dt = 0, [], (ops.Profile(), ops.Profile(), ops.Profile())
         self.all_outputs = []
-        self.webcam = webcam
 
         for batch in self.dataset:
             path, im, im0s, vid_cap, s = batch
@@ -195,6 +155,7 @@ class BasePredictor:
             for i in range(len(im)):
                 if self.webcam:
                     path, im0s = path[i], im0s[i]
+
                 p = Path(path)
 
                 log_string, log_string2, pulse_df, vehicle_df = self.write_results(i, preds, (p, im, im0s))
@@ -203,15 +164,15 @@ class BasePredictor:
                     pulse = pulse_df['pulse'][len(pulse_df) - 1]
                 else:
                     pulse = 0
-                video = self.save_preds(vehicle_df, log_string2, pulse, video)  # str(self.save_dir / p.name))
+                video = self.save_preds(vehicle_df, log_string2, pulse, video, pulse_df)
 
             # Print time (inference-only)
             LOGGER.info(f"{s}{'' if len(preds) else '(no detections), '}{self.dt[1].dt * 1E3:.1f}ms")
 
-        return self.all_outputs, pulse_df, video
+        return self.all_outputs, video
 
 
-    def save_preds(self, vehicle_df, log_string2, pulse, video):
+    def save_preds(self, vehicle_df, log_string2, pulse, video, pulse_df):
         im0 = self.annotator.result()
 
         image_toresize = cv2.resize(im0, dsize=(1536, 864))
@@ -254,7 +215,37 @@ class BasePredictor:
 
         cv2.putText(l_img, f'Pulse: {pulse}', (20, height + 50), 0, 1, [0, 0, 0], thickness, lineType=cv2.LINE_AA)
         cv2.putText(l_img, log_string2, (20, height + 100), 0, 1, [0, 0, 0], thickness, lineType=cv2.LINE_AA)
-        #self.vid_writer[idx].write(l_img)
-        video.append(l_img)
+
+        pulse_df.index = pd.to_datetime(pulse_df['time'], format='%H:%M:%S  %d.%m.%Y', errors='coerce')
+
+        fig, ax = plt.subplots()
+        sns.lineplot(pulse_df)
+        xticks = ax.get_xticks()
+        xticklabels = [pd.to_datetime(t, unit='s').strftime('%H:%M:%S') if not pd.isnull(t) else ''
+                       for t in xticks]
+
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xticklabels)
+
+        plt.ylabel('Pulse')
+        plt.xlabel('time')
+
+        with io.BytesIO() as buff:
+            fig.savefig(buff, format='raw')
+            buff.seek(0)
+            data = np.frombuffer(buff.getvalue(), dtype=np.uint8)
+        w, h = fig.canvas.get_width_height()
+        pulse_plot = data.reshape((int(h), int(w), -1))
+        plt.close()
+        pulse_plot = cv2.cvtColor(pulse_plot, cv2.COLOR_BGRA2BGR)
+
+
+        coef = l_img.shape[0]/pulse_plot.shape[0]
+        pulse_plot_resized = cv2.resize(pulse_plot, (int(coef * pulse_plot.shape[1]), int(coef * pulse_plot.shape[0])))
+
+
+        concat_img = np.concatenate((l_img, pulse_plot_resized), axis=1)
+        video.append(concat_img)
         return video
+
 

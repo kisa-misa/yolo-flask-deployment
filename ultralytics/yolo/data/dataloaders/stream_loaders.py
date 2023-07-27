@@ -6,8 +6,8 @@ import os
 import time
 from pathlib import Path
 from threading import Thread
-from urllib.parse import urlparse
 import requests
+from urllib.parse import urlparse
 
 import cv2
 import numpy as np
@@ -156,8 +156,7 @@ class LoadScreenshots:
 
 class LoadImages:
     # YOLOv5 image/video dataloader, i.e. `python detect.py --source image.jpg/vid.mp4`
-    def __init__(self, path, imgsz=640, stride=32, auto=True, transforms=None, vid_stride=1, max_frames=10):
-        self.max_frames = max_frames
+    def __init__(self, path, imgsz=640, stride=32, auto=True, transforms=None, vid_stride=1):
         if isinstance(path, str) and Path(path).suffix == ".txt":  # *.txt file with img/vid/dir on each line
             path = Path(path).read_text().rsplit()
         files = []
@@ -201,7 +200,7 @@ class LoadImages:
         return self
 
     def __next__(self):
-        if self.count >= self.max_frames or self.count == self.nf:
+        if self.count == self.nf:
             raise StopIteration
         path = self.files[self.count]
 
@@ -227,7 +226,7 @@ class LoadImages:
         else:
             # Read image
             self.count += 1
-            response = requests.get('http://86.121.159.16/record/current.jpg')
+            response = requests.get(path)
             im0 = np.asarray(bytearray(response.content), dtype="uint8")
             im0 = cv2.imdecode(im0, cv2.IMREAD_COLOR)
             #im0 = cv2.imread(path)  # BGR
