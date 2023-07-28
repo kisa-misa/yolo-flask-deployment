@@ -34,13 +34,12 @@ deepsort = None
 object_counter = {}
 
 speed_line_queue = {}
-def estimatespeed(Location1, Location2, h, w):
+def estimatespeed(Location1, Location2, h, w, fps):
     #Euclidean Distance Formula
     d_pixel = math.sqrt(math.pow(Location2[0] - Location1[0], 2) + math.pow(Location2[1] - Location1[1], 2))
     # defining thr pixels per meter
     ppm = min(h, w)
     d_meters = d_pixel / ppm
-    fps = 150
     speed = d_meters * fps * 3.6
 
     return int(speed)

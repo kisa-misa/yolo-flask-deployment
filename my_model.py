@@ -35,7 +35,7 @@ def init_tracker():
                             max_age=cfg_deep.DEEPSORT.MAX_AGE, n_init=cfg_deep.DEEPSORT.N_INIT, nn_budget=cfg_deep.DEEPSORT.NN_BUDGET,
                             use_cuda=True)
 
-def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
+def draw_boxes(img, bbox, names,object_id, fps, identities=None, offset=(0, 0)):
     height, width, _ = img.shape
     # remove tracked point from buffer if object is lost
     global c
@@ -82,7 +82,7 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
         # add center to buffer
         deq[id].appendleft(center)
         if len(deq[id]) >= 2:
-            object_speed = estimatespeed(deq[id][1], deq[id][0], x2-x1, y2-y1)
+            object_speed = estimatespeed(deq[id][1], deq[id][0], x2-x1, y2-y1, fps)
             speed_line_queue[id].append(object_speed)
             if obj_name not in object_counter:
                     object_counter[obj_name] = 1
@@ -139,7 +139,7 @@ class DetectionPredictor(BasePredictor):
 
         return preds
 
-    def write_results(self, idx, preds, batch):
+    def write_results(self, idx, preds, batch, fps):
         bbox_xyxy = []
         identities = []
         object_id = []
@@ -192,7 +192,7 @@ class DetectionPredictor(BasePredictor):
             identities = outputs[:, -2]
             object_id = outputs[:, -1]
 
-        img, pulse_df, vehicle_df = draw_boxes(im0, bbox_xyxy, self.model.names, object_id, identities) 
+        img, pulse_df, vehicle_df = draw_boxes(im0, bbox_xyxy, self.model.names, object_id, fps, identities)
       
         return log_string + log_string2, log_string2, pulse_df, vehicle_df
 

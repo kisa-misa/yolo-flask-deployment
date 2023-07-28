@@ -140,7 +140,6 @@ class BasePredictor:
 
         for batch in self.dataset:
             path, im, im0s, vid_cap, s, fps = batch
-            print(fps)
             with self.dt[0]:
                 im = self.preprocess(im)
                 if len(im.shape) == 3:
@@ -160,7 +159,7 @@ class BasePredictor:
 
                 p = Path(path)
 
-                log_string, log_string2, pulse_df, vehicle_df = self.write_results(i, preds, (p, im, im0s))
+                log_string, log_string2, pulse_df, vehicle_df = self.write_results(i, preds, (p, im, im0s), fps)
                 s += log_string
                 if len(pulse_df) > 0:
                     pulse = pulse_df['pulse'][len(pulse_df) - 1]
