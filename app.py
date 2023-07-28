@@ -43,6 +43,8 @@ def generate_frames2():
         if is_playing:
             _, video = predictor(text)
             for frame in video:
+                cv2.imshow('frame', frame)
+                print(123)
                 ret, buffer = cv2.imencode('.jpg', frame)
                 frame = buffer.tobytes()
 
@@ -94,7 +96,7 @@ def submit():
         # flash("File Type Not Allowed. \".mp4\",\".avi\",\".mkv\" only")
         # return redirect(request.url)
     # TODO If user goes straight to /submit
-    return render_template("submission.html")
+    return render_template("submission2.html")
 
 @app.route('/video_feed')
 def video_feed():

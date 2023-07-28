@@ -112,7 +112,6 @@ class BasePredictor:
         if is_url and is_file:
             source = check_file(source)  # download
 
-        video = []
         # model = self.model if self.done_setup else self.setup(source, model)
         model = self.model
 
@@ -136,6 +135,8 @@ class BasePredictor:
         self.webcam = webcam
         self.seen, self.windows, self.dt = 0, [], (ops.Profile(), ops.Profile(), ops.Profile())
         self.all_outputs = []
+
+        video = []
 
         for batch in self.dataset:
             path, im, im0s, vid_cap, s = batch
@@ -164,7 +165,10 @@ class BasePredictor:
                     pulse = pulse_df['pulse'][len(pulse_df) - 1]
                 else:
                     pulse = 0
-                video = self.save_preds(vehicle_df, log_string2, pulse, video, pulse_df)
+                if self.webcam:
+                    yield self.save_preds(vehicle_df, log_string2, pulse, [], pulse_df)
+                else:
+                    video = self.save_preds(vehicle_df, log_string2, pulse, video, pulse_df)
 
             # Print time (inference-only)
             LOGGER.info(f"{s}{'' if len(preds) else '(no detections), '}{self.dt[1].dt * 1E3:.1f}ms")
