@@ -3,6 +3,7 @@
 from flask import Flask,render_template,request,flash,redirect, Response
 import os
 import cv2
+import numpy as np
 from werkzeug.utils import redirect, secure_filename
 filename = ""
 from my_model import init_tracker, DetectionPredictor
@@ -23,12 +24,12 @@ init_tracker()
 
 def generate_frames():
     global is_playing
-    _, video = predictor('./uploads/' + filename)
+    video = predictor('./uploads/' + filename)
     while True:
         if is_playing:
             for frame in video:
 
-                ret, buffer = cv2.imencode('.jpg', frame)
+                ret, buffer = cv2.imencode('.jpg', np.array(frame[0]))
                 frame = buffer.tobytes()
 
                 yield (b'--frame\r\n'
@@ -37,15 +38,14 @@ def generate_frames():
             is_playing = False
 
 
+
 def generate_frames2():
     global is_playing
     while True:
         if is_playing:
-            _, video = predictor(text)
+            video = predictor(text)
             for frame in video:
-                cv2.imshow('frame', frame)
-                print(123)
-                ret, buffer = cv2.imencode('.jpg', frame)
+                ret, buffer = cv2.imencode('.jpg', np.array(frame[0]))
                 frame = buffer.tobytes()
 
                 yield (b'--frame\r\n'

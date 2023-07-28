@@ -154,12 +154,8 @@ class DetectionPredictor(BasePredictor):
             im = im[None]  # expand for batch dim
         self.seen += 1
         im0 = im0.copy()
-        
-        frame = getattr(self.dataset, 'frame', 0)
 
         self.data_path = p
-        #save_path = str(self.save_dir / p.name)  # im.jpg
-        #self.txt_path = str(self.save_dir / 'labels' / p.stem) + ('' if self.dataset.mode == 'image' else f'_{frame}')
         log_string += '%gx%g ' % im.shape[2:]  # print string
         self.annotator = self.get_annotator(im0)
 
@@ -167,10 +163,8 @@ class DetectionPredictor(BasePredictor):
         all_outputs.append(det)
         if len(det) == 0:
             return log_string, log_string2, pulse_df, vehicle_df,
-        
-        #count = 0
+
         for c in det[:, 5].unique():
-            #count += 1
             n = (det[:, 5] == c).sum()  # detections per class
             cl = self.model.names[int(c)]
             if cl=="motorcycle": cl = "bike"

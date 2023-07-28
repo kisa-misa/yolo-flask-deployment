@@ -69,7 +69,7 @@ class BasePredictor:
         print(self.device.type)
         self.half = False
         self.half &= self.device.type != 'cpu'  # half precision only supported on CUDA
-        self.model = AutoBackend('yolov8x6.pt', device=self.device, dnn=False, fp16=False)
+        self.model = AutoBackend('yolov8n.pt', device=self.device, dnn=False, fp16=False)
         self.stride, self.pt = None, None
         self.stride, self.pt = self.model.stride, self.model.pt
         self.imgsz = check_imgsz(640, stride=self.stride)
@@ -139,7 +139,8 @@ class BasePredictor:
         video = []
 
         for batch in self.dataset:
-            path, im, im0s, vid_cap, s = batch
+            path, im, im0s, vid_cap, s, fps = batch
+            print(fps)
             with self.dt[0]:
                 im = self.preprocess(im)
                 if len(im.shape) == 3:
@@ -165,15 +166,16 @@ class BasePredictor:
                     pulse = pulse_df['pulse'][len(pulse_df) - 1]
                 else:
                     pulse = 0
-                if self.webcam:
-                    yield self.save_preds(vehicle_df, log_string2, pulse, [], pulse_df)
-                else:
-                    video = self.save_preds(vehicle_df, log_string2, pulse, video, pulse_df)
+                # if self.webcam:
+                #     yield self.save_preds(vehicle_df, log_string2, pulse, [], pulse_df)
+                yield self.save_preds(vehicle_df, log_string2, pulse, [], pulse_df)
+                # else:
+                #     video = self.save_preds(vehicle_df, log_string2, pulse, video, pulse_df)
 
             # Print time (inference-only)
             LOGGER.info(f"{s}{'' if len(preds) else '(no detections), '}{self.dt[1].dt * 1E3:.1f}ms")
 
-        return self.all_outputs, video
+        # return video
 
 
     def save_preds(self, vehicle_df, log_string2, pulse, video, pulse_df):
