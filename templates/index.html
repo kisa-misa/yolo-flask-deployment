@@ -5,19 +5,19 @@
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <title>Title</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
+    <link rel='stylesheet' type='text/css' media='screen' href='static\main.css'>
 
 </head>
 <body>
     <h1>Object Detection and Road Pulse Estimation Using DeepSORT and YOLOv8</h1>
     <form action="/submit" enctype="multipart/form-data" method="POST">
     <input type="file" name="video">
-    <textarea name="text" rows="5" cols="40">http://109.206.96.58:8080/cam_1.cgi</textarea>
+    <textarea name="text" rows="5" cols="40"></textarea>
 
     <br>
     <br>
 
-    <input type="submit" value="Отправить" onclick="showAnalysisBar();">
+    <input type="submit" value="Submit" onclick="showAnalysisBar();">
     </form>
     <div id="notice" hidden=True>
         <li>Analysing video...</li>
